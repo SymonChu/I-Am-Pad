@@ -49,6 +49,10 @@ class HookEntrance : XposedModule() {
             handle = { processQQ() }
         ),
         PackageRoute(
+            match = { it.packageName == "com.tencent.tim" },
+            handle = { processQQ() }
+        ),
+        PackageRoute(
             match = { it.packageName.contains("com.tencent.mm") },
             handle = { processWeChat() }
         ),
@@ -63,6 +67,10 @@ class HookEntrance : XposedModule() {
         PackageRoute(
             match = ::isDingTalk,
             handle = { processDingTalk() }
+        ),
+        PackageRoute(
+            match = { it.packageName == "com.xunmeng.pinduoduo" },
+            handle = { processPdd() }
         ),
         PackageRoute(
             match = ::isCustomWeWork,
@@ -162,6 +170,24 @@ class HookEntrance : XposedModule() {
                         "isPadJudge",
                         "isPadWhiteListFromServer", "isPadBlackListFromServer",
                         "isPadWhiteListFromLocal", "isPadBlackListFromLocal"
+                    )
+                }
+            }.single().toDexMethod()
+        }
+    }
+
+    private fun processPdd() = afterApplicationAttach { context ->
+        // 拼多多平板判定方法：public static boolean(Context)，内部引用
+        // "ro.build.characteristics" 与 "tablet" 字符串（借鉴 TabletHook PddHook）
+        hookDexMethodToReturn("pdd_padDecision_method", context, true) {
+            findMethod {
+                matcher {
+                    modifiers(Modifier.PUBLIC or Modifier.STATIC)
+                    returnType(Boolean::class.javaPrimitiveType!!)
+                    paramTypes(Context::class.java)
+                    usingStrings(
+                        "ro.build.characteristics",
+                        "tablet"
                     )
                 }
             }.single().toDexMethod()
