@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name" translatable="false">I\'m Pad</string>
+    <string name="app_name" translatable="false">impad pro</string>
     <string name="module_desc">Enable Pad login on mobile phone.</string>
 </resources>

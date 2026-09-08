@@ -37,11 +37,11 @@ jobs:
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: i.am.pad-release apk
+          name: impad.pro-release apk
           path: app/build/outputs/apk/release/*signed.apk
 
       - name: Upload debug artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: i.am.pad-debug apk
+          name: impad.pro-debug apk
           path: app/build/outputs/apk/debug/*.apk

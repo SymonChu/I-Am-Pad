@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.houvven.impad"
+    namespace = "com.impad.pro"
     compileSdk = 36
 
     defaultConfig {

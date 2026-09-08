@@ -1,4 +1,4 @@
-package com.houvven.impad
+package com.impad.pro
 
 import android.app.Application
 import android.content.Context

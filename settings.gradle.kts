@@ -24,6 +24,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "I'm Pad"
+rootProject.name = "impad pro"
 include(":app")
  
