@@ -24,9 +24,21 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew assemble
 
+      - name: Check signing secrets
+        id: check_secrets
+        env:
+          SIGNING_KEY: ${{ secrets.ANDROID_SIGNING_KEY }}
+        run: |
+          if [ -n "$SIGNING_KEY" ]; then
+            echo "has_secrets=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_secrets=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: ilharp/sign-android-release@v2
         name: Sign app APK
         id: sign_app
+        if: steps.check_secrets.outputs.has_secrets == 'true'
         with:
           releaseDir: app/build/outputs/apk/release
           signingKey: ${{ secrets.ANDROID_SIGNING_KEY }}
@@ -34,11 +46,19 @@ jobs:
           keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
-      - name: Upload release artifacts
+      - name: Upload signed release artifacts
+        if: steps.check_secrets.outputs.has_secrets == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: impad.pro-release apk
           path: app/build/outputs/apk/release/*signed.apk
+
+      - name: Upload unsigned release artifacts
+        if: steps.check_secrets.outputs.has_secrets == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: impad.pro-release-unsigned apk
+          path: app/build/outputs/apk/release/*.apk
 
       - name: Upload debug artifacts
         uses: actions/upload-artifact@v4
