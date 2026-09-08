@@ -11,6 +11,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: set up JDK 17
@@ -66,3 +68,14 @@ jobs:
         with:
           name: impad.pro-debug apk
           path: app/build/outputs/apk/debug/*.apk
+
+      - name: Auto-publish Release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" \
+            --title "impad pro $TAG" \
+            --notes "自动发布：覆盖 11 个宿主应用平板登录。签名 APK 可直接安装。" \
+            app/build/outputs/apk/release/*signed.apk || true
