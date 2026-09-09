@@ -180,13 +180,13 @@ mod tests {
 
     #[test]
     fn parse_normal_line() {
-        let line = b"7f4a000000-7f4a001000 r-xp 00000000 fd:00 12345 /system/lib64/libwekit.so";
+        let line = b"7f4a000000-7f4a001000 r-xp 00000000 fd:00 12345 /system/lib64/libsample.so";
         let entry = parse_maps_line(line).expect("should parse");
         assert_eq!(entry.start, 0x7f4a000000);
         assert_eq!(entry.end, 0x7f4a001000);
         assert!(entry.prot & libc::PROT_READ != 0);
         assert!(entry.prot & libc::PROT_EXEC != 0);
-        assert_eq!(entry.path, "/system/lib64/libwekit.so");
+        assert_eq!(entry.path, "/system/lib64/libsample.so");
     }
 
     #[test]
@@ -210,7 +210,7 @@ mod tests {
             path: "/data/app/libdexkit.so".to_string(),
         };
         assert!(entry.path.contains("libdexkit.so"));
-        assert!(!entry.path.contains("libwekit.so"));
+        assert!(!entry.path.contains("libsample.so"));
     }
 
     #[test]

@@ -70,15 +70,20 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
 
       - name: Auto-publish Release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: steps.check_secrets.outputs.has_secrets == 'true' && startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
+          VERSION="${TAG#v}"
           gh release create "$TAG" \
             --title "impad pro $TAG" \
-            --notes "自动发布：覆盖 11 个宿主应用平板登录。签名 APK 可直接安装。" \
-            app/build/outputs/apk/release/*signed.apk || true
+            --notes "自动发布：覆盖 11 个宿主应用平板登录。只发布签名 APK，可直接安装。"
+          # 用应用名命名，只发行签名版
+          SIGNED=$(ls app/build/outputs/apk/release/*signed.apk | head -1)
+          echo "signed apk: $SIGNED"
+          test -n "$SIGNED"
+          gh release upload "$TAG" "$SIGNED#impad.pro-${VERSION}-release.apk"
 
   build_zygisk:
     needs: build
@@ -170,4 +175,7 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           ZIP=$(ls impad-zygisk/release/*.zip | head -1)
-          gh release upload "$TAG" "$ZIP" --clobber || true
+          VERSION="${TAG#v}"
+          echo "zygisk zip: $ZIP"
+          test -n "$ZIP"
+          gh release upload "$TAG" "$ZIP#impad.pro-zygisk-${VERSION}.zip" --clobber || true

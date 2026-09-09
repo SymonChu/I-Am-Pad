@@ -28,4 +28,4 @@ Magisk 需启用 Zygisk（或 KernelSU）。刷入 ZIP 后重启，11 个宿主�
 
 ## License
 
-GPL-3.0。Zygisk 模式基于 [WeKite](https://github.com/ujhhgtg/WeKite)（GPL-3.0）的 ART hook 引擎与注入器移植，保留原作者版权声明。
+GPL-3.0。

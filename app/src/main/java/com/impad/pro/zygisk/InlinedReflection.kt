@@ -3,7 +3,7 @@ package com.impad.pro.zygisk
 import java.lang.reflect.AccessibleObject
 import java.lang.reflect.Member
 
-// ── Primitive / boxed type aliases (inlined from WeKite utils/reflection/Classes.kt) ──
+// ── Primitive / boxed type aliases ──
 // Used by ArtHookBridge's DexMaker code-gen where the Kotlin keyword is shadowed
 // by a need to reference the java Class object of that primitive.
 
@@ -27,7 +27,7 @@ inline val BDouble: Class<Double> get() = Double::class.javaObjectType
 inline val BChar: Class<Char> get() = Char::class.javaObjectType
 inline val BString: Class<String> get() = String::class.java
 
-// ── reflekt.utils.inline (dev.ujhhgtg.reflekt) ────────────────────────────
+// ── Inlined reflection helpers ────────────────────────────────────────────
 
 inline val Member.isStatic: Boolean get() = java.lang.reflect.Modifier.isStatic(modifiers)
 
