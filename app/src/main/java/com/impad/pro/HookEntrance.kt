@@ -8,6 +8,7 @@ import android.util.Log
 import com.highcapable.kavaref.KavaRef.Companion.resolve
 import com.highcapable.kavaref.extension.hasClass
 import com.highcapable.kavaref.extension.toClass
+import com.highcapable.kavaref.extension.toClassOrNull
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface
 import org.luckypray.dexkit.DexKitBridge
@@ -26,6 +27,7 @@ class HookEntrance : XposedModule() {
         private const val QQ_BUGLY_PREFS_NAME = "BUGLY_COMMON_VALUES"
         private const val QQ_PANDORA_CACHE_PATH = "files/mmkv/Pandora"
         private const val QQ_PANDORA_CRC_PATH = "files/mmkv/Pandora.crc"
+        private const val QQ_PAD_UTIL_CLASS = "com.tencent.common.config.PadUtil"
     }
 
     private var methodCache: DexMethodCache? = null
@@ -94,6 +96,40 @@ class HookEntrance : XposedModule() {
                 context?.let(::resetQQModelCacheIfNeeded)
                 chain.proceed()
             }
+        }
+        // QQ9+ 平板判定改为直接命中宿主 PadUtil 的 boolean 判定方法返回 true，
+        // 不再只依赖模拟 ro.build.characteristics（QQ 已不再信任该属性）。
+        afterApplicationAttach { context ->
+            hookQQPadAsTablet(context.classLoader)
+        }
+    }
+
+    /**
+     * Directly hook QQ's Pad/tablet decision methods to return true.
+     *
+     * QQ 9 已不再依据 ro.build.characteristics 判平板（沿用多年的 simulateTabletProperties
+     * 模拟属性方案失效），判定收敛到宿主公共类 com.tencent.common.config.PadUtil 及其
+     * Pad 判定的 boolean 方法上。这里用 KavaRef 直接解析该宿主类，把其中"返回 boolean
+     * 且方法名含 Pad 语义"的判定方法全部 hook 成返回 true，让 QQ 直接认出平板。
+     * 每类匹配独立 runCatching 隔离 + 记录命中数，不命中也不会拖垮其它 hook。
+     */
+    private fun hookQQPadAsTablet(classLoader: ClassLoader) {
+        runCatching {
+            val clazz = Class.forName(QQ_PAD_UTIL_CLASS, false, classLoader)
+            val padMethods = clazz.declaredMethods.filter { m ->
+                m.returnType == Boolean::class.java && m.name.contains("pad", ignoreCase = true)
+            }.map { m ->
+                m.isAccessible = true
+                m
+            }
+            if (padMethods.isEmpty()) {
+                log(Log.INFO, TAG, "QQ PadUtil has no boolean 'pad' methods")
+                return
+            }
+            hookAllToReturn(padMethods, true)
+            log(Log.INFO, TAG, "QQ PadUtil hooked ${padMethods.size} methods to return true")
+        }.onFailure {
+            log(Log.ERROR, TAG, "QQ PadUtil hook failed: ${it.stackTraceToString()}")
         }
     }
 
