@@ -15,7 +15,7 @@ internal fun XposedModule.hookPddCredentialWrite(classLoader: ClassLoader) {
         DexKitBridge.create(classLoader, true).use { bridge ->
             val matches = bridge.findMethod {
                 matcher {
-                    usingStrings("access_token", "uid", "uin", "login_time")
+                    usingEqStrings("access_token", "uid", "uin", "login_time")
                 }
             }.filter { m ->
                 Modifier.isStatic(m.modifiers) &&
@@ -50,7 +50,7 @@ internal fun XposedModule.hookPddTokenExpired(classLoader: ClassLoader) {
         DexKitBridge.create(classLoader, true).use { bridge ->
             val matches = bridge.findMethod {
                 matcher {
-                    usingStrings("login_token_expired")
+                    usingEqStrings("login_token_expired")
                 }
             }.filter { m ->
                 !Modifier.isStatic(m.modifiers) &&

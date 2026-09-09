@@ -16,7 +16,7 @@ internal fun XposedModule.hookPddLoginRequest(classLoader: ClassLoader) {
         DexKitBridge.create(classLoader, true).use { bridge ->
             val matches = bridge.findMethod {
                 matcher {
-                    usingStrings("login_scene", "refer_page_sn", "app_id")
+                    usingEqStrings("login_scene", "refer_page_sn", "app_id")
                 }
             }.filter { m ->
                 !Modifier.isStatic(m.modifiers) &&
@@ -47,7 +47,7 @@ internal fun XposedModule.hookPddTicketExchange(classLoader: ClassLoader) {
         DexKitBridge.create(classLoader, true).use { bridge ->
             val matches = bridge.findMethod {
                 matcher {
-                    usingStrings("ticket", "secret_key", "/api/sigerus/auth/ticket")
+                    usingEqStrings("ticket", "secret_key", "/api/sigerus/auth/ticket")
                 }
             }.filter { m ->
                 Modifier.isPublic(m.modifiers) &&

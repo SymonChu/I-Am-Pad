@@ -177,20 +177,29 @@ class HookEntrance : XposedModule() {
     }
 
     private fun processPdd() = afterApplicationAttach { context ->
-        // 拼多多平板判定方法：public static boolean(Context)，内部引用
-        // "ro.build.characteristics" 与 "tablet" 字符串（借鉴 TabletHook PddHook）
-        hookDexMethodToReturn("pdd_padDecision_method", context, true) {
-            findMethod {
-                matcher {
-                    modifiers(Modifier.PUBLIC or Modifier.STATIC)
-                    returnType(Boolean::class.javaPrimitiveType!!)
-                    paramTypes(Context::class.java)
-                    usingStrings(
-                        "ro.build.characteristics",
-                        "tablet"
-                    )
+        // 拼多多平板判定方法：public static boolean(Context)，内部精确引用
+        // "ro.build.characteristics" 与 "tablet" 字符串（对齐 TabletHook PddHook 原版
+        // usingEqStrings 精确匹配——Contains 模糊会匹配到大量含 tablet 子串的方法
+        // 导致 .single() 抛异常连坐整个 processPdd）
+        // 独立 runCatching：判定失败不拖累后面的诊断 hook
+        runCatching {
+            hookDexMethodToReturn("pdd_padDecision_method_v2", context, true) {
+                val matches = findMethod {
+                    matcher {
+                        modifiers(Modifier.PUBLIC or Modifier.STATIC)
+                        returnType(Boolean::class.javaPrimitiveType!!)
+                        paramTypes(Context::class.java)
+                        usingEqStrings(
+                            "ro.build.characteristics",
+                            "tablet"
+                        )
+                    }
                 }
-            }.single().toDexMethod()
+                log(Log.INFO, TAG, "PDD pad decision candidates=${matches.size}")
+                matches.single().toDexMethod()
+            }
+        }.onFailure {
+            log(Log.WARN, TAG, "PDD 平板判定 hook 安装失败(忽略): ${it.message}")
         }
 
         // TabletHook 移植：拼多多登录诊断（登录请求/换票/凭证/token 失效事件）
