@@ -38,4 +38,6 @@ dependencies {
     implementation(libs.kavaref.core)
     implementation(libs.kavaref.extension)
     compileOnly(libs.libxposed.api)
+    implementation(libs.dexmaker)
+    implementation(libs.androidx.annotation)
 }

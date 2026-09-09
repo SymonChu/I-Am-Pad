@@ -79,3 +79,95 @@ jobs:
             --title "impad pro $TAG" \
             --notes "自动发布：覆盖 11 个宿主应用平板登录。签名 APK 可直接安装。" \
             app/build/outputs/apk/release/*signed.apk || true
+
+  build_zygisk:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Rust (stable, Android targets)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi
+
+      - name: Install Android NDK
+        run: |
+          NDK_VERSION=30.0.14904198
+          MIN_SDK=28
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK_VERSION" >/dev/null 2>&1 || true
+          NDK_BIN="$ANDROID_HOME/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          test -x "$NDK_BIN/aarch64-linux-android$MIN_SDK-clang"
+          test -x "$NDK_BIN/armv7a-linux-androideabi$MIN_SDK-clang"
+
+      - name: Build native (both ABIs)
+        run: |
+          # 写 .cargo/config.toml（CI 的 NDK 路径不同于 NAS 本地）
+          NDK_VERSION=30.0.14904198
+          MIN_SDK=28
+          NDK_BIN="$ANDROID_HOME/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          cat > impad-zygisk/native/.cargo/config.toml <<EOF
+          [target.aarch64-linux-android]
+          ar = "$NDK_BIN/llvm-ar"
+          linker = "$NDK_BIN/aarch64-linux-android$MIN_SDK-clang"
+          [target.armv7-linux-androideabi]
+          ar = "$NDK_BIN/llvm-ar"
+          linker = "$NDK_BIN/armv7a-linux-androideabi$MIN_SDK-clang"
+          [env]
+          CC_aarch64_linux_android = "$NDK_BIN/aarch64-linux-android$MIN_SDK-clang"
+          CXX_aarch64_linux_android = "$NDK_BIN/aarch64-linux-android$MIN_SDK-clang++"
+          AR_aarch64_linux_android = "$NDK_BIN/llvm-ar"
+          CC_armv7_linux_androideabi = "$NDK_BIN/armv7a-linux-androideabi$MIN_SDK-clang"
+          CXX_armv7_linux_androideabi = "$NDK_BIN/armv7a-linux-androideabi$MIN_SDK-clang++"
+          AR_armv7_linux_androideabi = "$NDK_BIN/llvm-ar"
+          EOF
+          cd impad-zygisk/native
+          cargo build --release --target aarch64-linux-android
+          cargo build --release --target armv7-linux-androideabi
+
+      - name: Download APK for payload
+        uses: actions/download-artifact@v4
+        with:
+          name: impad.pro-release apk
+          path: apk-artifacts
+        continue-on-error: true
+
+      - name: Package Zygisk module ZIP
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          APK=$(find apk-artifacts -name "*signed.apk" 2>/dev/null | head -1)
+          if [ -z "$APK" ]; then
+            APK=$(find app/build/outputs/apk -name "*.apk" | head -1)
+          fi
+          echo "payload APK: $APK"
+          test -n "$APK"
+          # 打包脚本引用 NAS 路径，CI 上直接用参数传 APK 路径
+          chmod +x impad-zygisk/build-module.sh
+          ./impad-zygisk/build-module.sh "$(pwd)/$APK"
+
+      - name: Upload Zygisk module
+        uses: actions/upload-artifact@v4
+        with:
+          name: impad-zygisk
+          path: impad-zygisk/release/*.zip
+          if-no-files-found: error
+
+      - name: Attach Zygisk module to Release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          ZIP=$(ls impad-zygisk/release/*.zip | head -1)
+          gh release upload "$TAG" "$ZIP" --clobber || true

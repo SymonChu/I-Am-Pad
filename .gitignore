@@ -9,3 +9,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+impad-zygisk/native/target/
+impad-zygisk/release/
+impad-zygisk/output/
+

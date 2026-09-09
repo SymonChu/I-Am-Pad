@@ -1,0 +1,7 @@
+id=${moduleId}
+name=${moduleName}
+version=${versionName}
+versionCode=${versionCode}
+author=SymonChu
+description=impad pro — Zygisk mode. 平板登录伪装 for 11 宿主（微信/QQ/TIM/企微/钉钉/小红书/拼多多/国航之翼/粤政易/中电建/中建）。安装即对所有 11 宿主生效。
+#updateJson=
