@@ -46,11 +46,11 @@ class HookEntrance : XposedModule() {
     private val packageRoutes = listOf(
         PackageRoute(
             match = { it.packageName.contains("com.tencent.mobileqq") },
-            handle = { processQQ() }
+            handle = { processQQ(it.classLoader) }
         ),
         PackageRoute(
             match = { it.packageName == "com.tencent.tim" },
-            handle = { processQQ() }
+            handle = { processQQ(it.classLoader) }
         ),
         PackageRoute(
             match = { it.packageName.contains("com.tencent.mm") },
@@ -82,9 +82,20 @@ class HookEntrance : XposedModule() {
         packageRoutes.firstOrNull { it.match(param) }?.handle?.invoke(param)
     }
 
-    private fun processQQ() {
+    private fun processQQ(hostClassLoader: ClassLoader? = null) {
         simulateTabletModel("Xiaomi", QQ_TARGET_MODEL)
         simulateTabletProperties()
+        // TabletHook 移植：QQ TABLET 枚举方案（更底层的平板客户端通道）
+        if (hostClassLoader != null) {
+            runCatching {
+                System.loadLibrary("dexkit")
+                DexKitBridge.create(hostClassLoader, true).use { bridge ->
+                    hookQqTabletEnum(bridge, hostClassLoader)
+                }
+            }.onFailure {
+                log(Log.WARN, TAG, "TabletHook: QQ TABLET 初始化失败(忽略): ${it.message}")
+            }
+        }
         Application::class.java.resolve().firstMethod {
             name("onCreate")
         }.self.let { method ->
@@ -128,6 +139,9 @@ class HookEntrance : XposedModule() {
                 }
             }.single().toDexMethod()
         }
+
+        // TabletHook 移植：新版微信(8.0.77+)的 inTabletEnv 平板环境判定（更通用）
+        hookWeChatTabletEnv(context.classLoader)
     }
 
     private fun processWeWork() = afterApplicationAttach { context ->
@@ -192,6 +206,12 @@ class HookEntrance : XposedModule() {
                 }
             }.single().toDexMethod()
         }
+
+        // TabletHook 移植：拼多多登录诊断（登录请求/换票/凭证/token 失效事件）
+        hookPddLoginRequest(context.classLoader)
+        hookPddTicketExchange(context.classLoader)
+        hookPddCredentialWrite(context.classLoader)
+        hookPddTokenExpired(context.classLoader)
     }
 
     private fun processXhs(classLoader: ClassLoader) {
