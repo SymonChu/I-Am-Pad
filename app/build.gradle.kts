@@ -7,11 +7,16 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = namespace
+        // applicationId 必须与 LSPosed 模块仓库（Xposed-Modules-Repo）的仓库名一致。
+        // 官方 bot 只自动放行两类包名：以 io.github.<用户名>. 开头，或包名反解的根域名挂有
+        // TXT 记录 lsposed-modules-repo-verification=<用户名>。com.impad.pro 反解根域为 impad.com
+        // （非本项目所有），故改用 io.github.symonchu.*。namespace 保持不变：
+        // 入口类 com.impad.pro.HookEntrance、proguard keep 规则、Zygisk JNI 类名都依赖它。
+        applicationId = "io.github.symonchu.impadpro"
         minSdk = 27
         targetSdk = 36
-        versionCode = 15
-        versionName = "1.1.4"
+        versionCode = 16
+        versionName = "1.2.0"
     }
     buildTypes {
         release {
