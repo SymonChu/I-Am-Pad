@@ -11,6 +11,12 @@
 | **LSPosed 模式** | `impad.pro-<version>-release.apk` | 已 root，安装 LSPosed 框架 | 在作用域内勾选目标应用 |
 | **Zygisk 模式** | `impad.pro-zygisk-<version>.zip` | Magisk（启用 Zygisk）/ KernelSU | 免 LSPosed 框架，native 全量注入，刷入即对所有 11 个宿主生效 |
 
+## 模块仓库（推荐）
+
+已上架 LSPosed 官方模块仓库：在 LSPosed 管理器的「模块仓库」里搜索 **impad pro** 即可直接安装与更新（[网页版](https://modules.lsposed.org/module/io.github.symonchu.impadpro)）。该渠道只提供 LSPosed 模式的签名 APK；Zygisk 模块 ZIP 请到 [Releases](https://github.com/SymonChu/I-Am-Pad/releases) 下载。
+
+> 应用包名为 `io.github.symonchu.impadpro`（LSPosed 模块仓库要求包名以 `io.github.<用户名>.` 开头或自有域名验证）。早期 `com.impad.pro` 的安装包无法覆盖升级，需先卸载旧版。
+
 ## 支持应用（11 个）
 
 | 应用 | 包名 | 实现方式 |
