@@ -15,8 +15,8 @@ android {
         applicationId = "io.github.symonchu.impadpro"
         minSdk = 27
         targetSdk = 36
-        versionCode = 16
-        versionName = "1.2.0"
+        versionCode = 17
+        versionName = "1.2.1"
     }
     buildTypes {
         release {

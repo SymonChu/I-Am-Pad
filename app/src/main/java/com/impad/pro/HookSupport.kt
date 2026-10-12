@@ -83,6 +83,9 @@ internal fun XposedModule.afterApplicationAttach(
             chain.thisObject as? Context
         }
         context?.let(actionWrapper)
+        // libxposed 的 hook 是拦截链模型：不调 proceed() 就不执行原方法体。
+        // 之前漏了这句，被 hook 的基类方法体（Application.onCreate 等）会被整体跳过。
+        return@intercept chain.proceed()
     }
 }
 

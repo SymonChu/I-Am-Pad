@@ -153,7 +153,11 @@ class HookEntrance : XposedModule() {
             }.single().toDexMethod()
         }
 
-        hookDexMethodToReturn("isFoldableDevice_method", context, true) {
+        // 微信 8.0.78 起把折叠屏品牌判定拆成了多个方法，三个字符串不再聚在同一个方法里，
+        // 原查询会返回空 → single() 抛异常被外层吞掉 → hook 静默不生效。
+        // 兜底：按「调用了含 royole / ro.os_foldable_screen_support 字符串的方法」反查聚合方法。
+        // cacheKey 换成 _v2：旧缓存指向的是旧版微信的方法签名，必须重查才能走到新逻辑。
+        hookDexMethodToReturn("isFoldableDevice_method_v2", context, true) {
             findMethod {
                 searchPackages("com.tencent.mm.ui")
                 matcher {
@@ -161,6 +165,17 @@ class HookEntrance : XposedModule() {
                     paramCount(0)
                     usingStrings("royole", "tecno", "ro.os_foldable_screen_support")
                     returnType(Boolean::class.javaPrimitiveType!!)
+                }
+            }.singleOrNull()?.toDexMethod() ?: findMethod {
+                searchPackages("com.tencent.mm.ui")
+                matcher {
+                    modifiers(Modifier.PUBLIC or Modifier.STATIC)
+                    paramCount(0)
+                    returnType(Boolean::class.javaPrimitiveType!!)
+                    invokeMethods {
+                        add { usingStrings("royole") }
+                        add { usingStrings("ro.os_foldable_screen_support") }
+                    }
                 }
             }.single().toDexMethod()
         }
